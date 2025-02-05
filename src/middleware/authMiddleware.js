@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
+const AppError = require('../utils/appError')
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -44,6 +45,9 @@ exports.signUp = catchAsync(async (req, res, next) => {
   createSendToken(newUser, 201, res);
 });
 
+
+
+
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -59,21 +63,6 @@ exports.login = catchAsync(async (req, res, next) => {
     // If user found in the User schema
     // Send token to client
     createSendToken(user, 200, res);
-    return;
-  }
-
-  // Check if user exists in the Registration schema and password is correct
-  const registration = await Registration.findOne({ email }).select(
-    "+password"
-  );
-
-  if (
-    registration &&
-    (await registration.correctPassword(password, registration.password))
-  ) {
-    // If user found in the Registration schema
-    // Send token to client
-    createSendToken(registration, 200, res);
     return;
   }
 
