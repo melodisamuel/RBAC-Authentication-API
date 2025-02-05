@@ -1,39 +1,33 @@
-const dotenv = require('dotenv');
-dotenv.config({ path: './config.env' }); // ✅ Load environment variables
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const app = require('./app');
 
+// Load environment variables
+dotenv.config({ path: './config.env' });
 
+// Handle uncaught exceptions globally
 process.on("uncaughtException", (err) => {
-    console.log(err.name, err.message);
+    console.error(err.name, err.message);
     process.exit(1);
-  });
+});
 
+// Connect to MongoDB
+const DB = process.env.DATABASE.replace('<PASSWORD>', process.env.DATABASE_PASSWORD);
+mongoose.connect(DB, {})
+    .then(() => console.log('DB connection successful'))
+    .catch((err) => console.error('DB connection failed:', err));
 
-// Loadind environmental variables
-dotenv.config({ path: './config.env' })
-
-
-// Connect to mongoDB
-console.log("DATABASE URL:", process.env.DATABASE); // Debugging
-const DB = process.env.DATABASE.replace('<PASSWORD>', process.env.DATABASE_PASSWORD)
-
-mongoose.connect(DB, {}).then(() => console.log('DB connection succesful'));
-
-
-
-// PORT
+// Set up server and listen on the specified port
 const port = process.env.PORT || 5000;
-
-// SERVER
 const server = app.listen(port, () => {
-    console.log(`App running on ${port}`);
-})
+    console.log(`App running on port ${port}`);
+});
 
+// Handle unhandled promise rejections globally
 process.on("unhandledRejection", (err) => {
-    console.log("UNHANDLED REJECTION! 💥 Shutting down...");
-    console.log(err.name, err.message);r
+    console.error("UNHANDLED REJECTION! 💥 Shutting down...");
+    console.error(err.name, err.message);
     server.close(() => {
-      process.exit(1);
+        process.exit(1);
     });
-  });
-
+});
