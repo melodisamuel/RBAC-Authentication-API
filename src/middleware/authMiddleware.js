@@ -1,17 +1,82 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
+const User = require("../models/userModel");
+const catchAsync = require("../utils/catchAsync");
 
-const authMiddleware = (req, res, next) => {
-    const token = req.header('Authorization');
-
-    if (!token) return res.status(401).json({ message: "Access Denied" });
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        res.status(403).json({ message: "Invalid Token" });
-    }
+const signToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
 };
 
-module.exports = authMiddleware;
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
+
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+
+  res.cookie("jwt", token, cookieOptions);
+
+  // Remove password from the output
+  user.password = undefined;
+
+  res.status(statusCode).json({
+    status: "success",
+    token,
+    data: {
+      user,
+    },
+  });
+};
+
+exports.signUp = catchAsync(async (req, res, next) => {
+
+  const newUser = await User.create({
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+    role: req.body.role,
+  });
+  createSendToken(newUser, 201, res);
+});
+
+exports.login = catchAsync(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  // Check if email and password exist
+  if (!email || !password) {
+    return next(new AppError("Please provide email and password!", 400));
+  }
+
+  // Check if user exists in the User schema and password is correct
+  const user = await User.findOne({ email }).select("+password");
+
+  if (user && (await user.correctPassword(password, user.password))) {
+    // If user found in the User schema
+    // Send token to client
+    createSendToken(user, 200, res);
+    return;
+  }
+
+  // Check if user exists in the Registration schema and password is correct
+  const registration = await Registration.findOne({ email }).select(
+    "+password"
+  );
+
+  if (
+    registration &&
+    (await registration.correctPassword(password, registration.password))
+  ) {
+    // If user found in the Registration schema
+    // Send token to client
+    createSendToken(registration, 200, res);
+    return;
+  }
+
+  // If user not found in either schema or password is incorrect
+  return next(new AppError("Incorrect email or password!", 401));
+});
