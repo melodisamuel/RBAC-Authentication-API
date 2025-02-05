@@ -1,19 +1,20 @@
+const dotenv = require('dotenv');
+dotenv.config({ path: './config.env' }); // ✅ Load environment variables
 const mongoose = require('mongoose');
-const dotenv = require('dotenv')
+
 
 process.on("uncaughtException", (err) => {
-    console.log(e);
     console.log(err.name, err.message);
     process.exit(1);
   });
 
-const app = require('./app');
 
 // Loadind environmental variables
 dotenv.config({ path: './config.env' })
 
 
 // Connect to mongoDB
+console.log("DATABASE URL:", process.env.DATABASE); // Debugging
 const DB = process.env.DATABASE.replace('<PASSWORD>', process.env.DATABASE_PASSWORD)
 
 mongoose.connect(DB, {}).then(() => console.log('DB connection succesful'));
@@ -21,7 +22,7 @@ mongoose.connect(DB, {}).then(() => console.log('DB connection succesful'));
 
 
 // PORT
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // SERVER
 const server = app.listen(port, () => {
