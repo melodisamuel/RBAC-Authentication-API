@@ -80,7 +80,7 @@ RBAC Authentication
 ## Troubleshooting
 - **Port Already in Use**: Change the `PORT` in `.env` or stop other processes using the port.
 - **MongoDB Connection Issues**: Ensure MongoDB is running and `MONGO_URI` is correctly set.
-- **JWT Token Not Changing**: Re-authenticate and use the latest token in Postman.
+- **JWT Token Not Changing**: Re-authenticate and use the latest token in Postman. Incase of cache issues for JWT copy JWT on the payload returned and paste in the bearer token section.
 
 ## Contributing
 1. Fork the repo
