@@ -3,6 +3,7 @@ const morgan = require('morgan');
 const helmet = require('helmet');
 const hpp = require('hpp')
 const AppError = require('./src/utils/appError'); // Ensure this file exists
+const protectedRoutes = require('./src/routes/protectedRoutes')
 const authRoutes = require('./src/routes/authRoutes')
 
 
@@ -27,9 +28,11 @@ app.use((req, res, next) => {
 
 app.use(express.json()); // ✅ Parse incoming JSON requests
 
+
+
 //Routes
 app.use("/api/v1/auth", authRoutes);
-
+app.use("/api/v1/protected", protectedRoutes);
 
 
 

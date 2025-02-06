@@ -1,16 +1,19 @@
 const jwt = require("jsonwebtoken");
+const { promisify } = require('util');
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
-const AppError = require('../utils/appError')
+const AppError = require('../utils/appError');
 
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+// SignToken function
+const signToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
-
+2
+// Create and send the JWT token
 const createSendToken = (user, statusCode, res) => {
-  const token = signToken(user._id);
+  const token = signToken(user._id, user.role); // Pass the user's role
 
   const cookieOptions = {
     expires: new Date(
@@ -34,21 +37,50 @@ const createSendToken = (user, statusCode, res) => {
   });
 };
 
-exports.signUp = catchAsync(async (req, res, next) => {
 
+// Middleware for Authentication
+const authMiddleware = async (req, res, next) => {
+  try {
+      let token;
+      if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+          token = req.headers.authorization.split(" ")[1];
+      }
+
+      if (!token) {
+          return res.status(401).json({ message: "Unauthorized: No token provided" });
+      }
+
+      // Decode the token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Fetch the user from the database to ensure correct role
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+          return res.status(401).json({ message: "User no longer exists" });
+      }
+
+      req.user = user; // Ensure the correct role is assigned
+      next();
+  } catch (err) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+  }
+};
+
+
+// Sign Up function
+const signUp = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
     password: req.body.password,
-    role: req.body.role,
+    role: req.body.role, // Make sure this is coming from the request body
   });
   createSendToken(newUser, 201, res);
 });
 
-
-
-
-exports.login = catchAsync(async (req, res, next) => {
+// Login function
+const login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   // Check if email and password exist
@@ -69,3 +101,10 @@ exports.login = catchAsync(async (req, res, next) => {
   // If user not found in either schema or password is incorrect
   return next(new AppError("Incorrect email or password!", 401));
 });
+
+// Exporting functions and middleware
+module.exports = {
+  authMiddleware,
+  signUp,
+  login,
+};
