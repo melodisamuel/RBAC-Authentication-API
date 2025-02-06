@@ -5,6 +5,7 @@ const hpp = require('hpp')
 const AppError = require('./src/utils/appError'); // Ensure this file exists
 const protectedRoutes = require('./src/routes/protectedRoutes')
 const authRoutes = require('./src/routes/authRoutes')
+const ErrorHandler = require('./src/middleware/errorMiddleware')
 
 
 const app = express();
@@ -40,6 +41,10 @@ app.use("/api/v1/protected", protectedRoutes);
 app.all('*', (req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`));
 });
+
+app.use(ErrorHandler);
+// app.use(Endpoints)
+
 
 
 module.exports = app;
